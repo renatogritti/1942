@@ -5,23 +5,74 @@ import math # Import math module
 from src.config import *
 
 class BombEffect(pygame.sprite.Sprite):
-    """Representa o efeito visual de uma bomba explodindo na tela."""
+    """Representa o efeito visual de uma bomba explodindo na tela com um sistema de partículas."""
     def __init__(self, center):
-        """Inicializa o efeito da bomba.
+        """Inicializa o efeito da bomba com partículas.
 
         Args:
             center (tuple): A posição central (x, y) onde a bomba explode.
         """
         super().__init__()
-        pygame.draw.circle(self.image, (255, 255, 0, 150), (75, 75), 75)
+        self.center = center
+        self.frame = 0
+        self.max_frames = 45 # Duração do efeito da bomba
+        self.particles = []
+        self.num_particles = 80 # Número de partículas para o efeito da bomba
+        self.colors = [(255, 255, 200), (255, 200, 0), (255, 100, 0), (200, 50, 0)] # Cores para a explosão da bomba
+
+        # Gerar partículas iniciais
+        for _ in range(self.num_particles):
+            angle = random.uniform(0, 2 * math.pi)
+            speed = random.uniform(5, 15) # Velocidade inicial das partículas
+            size = random.randint(5, 12) # Tamanho das partículas
+            lifetime = random.randint(20, 40) # Tempo de vida das partículas
+            color = random.choice(self.colors)
+            self.particles.append({
+                'pos': list(center),
+                'vel': [math.cos(angle) * speed, math.sin(angle) * speed],
+                'size': size,
+                'lifetime': lifetime,
+                'color': color,
+                'alpha': 255
+            })
+
+        self.image = pygame.Surface((1, 1), pygame.SRCALPHA) # Superfície dummy, será redesenhada a cada frame
         self.rect = self.image.get_rect(center=center)
-        self.duration = 30 # frames
 
     def update(self):
-        """Atualiza a duração do efeito da bomba e o remove quando termina."""
-        self.duration -= 1
-        if self.duration <= 0:
+        """Atualiza o estado do efeito da bomba, movendo e desvanecendo as partículas."""
+        self.frame += 1
+        if self.frame > self.max_frames and not self.particles:
             self.kill()
+            return
+
+        # Atualizar partículas
+        for p in self.particles[:]: # Iterar sobre uma cópia para permitir remoção
+            p['pos'][0] += p['vel'][0]
+            p['pos'][1] += p['vel'][1]
+            p['lifetime'] -= 1
+            p['alpha'] = max(0, min(255, int(255 * (p['lifetime'] / self.max_frames)))) # Ajustar alpha com base no tempo de vida
+            if p['lifetime'] <= 0:
+                self.particles.remove(p)
+
+        # Redimensionar superfície da imagem para abranger todas as partículas para desenho
+        if self.particles:
+            min_x = min(p['pos'][0] for p in self.particles)
+            max_x = max(p['pos'][0] + p['size'] for p in self.particles)
+            min_y = min(p['pos'][1] for p in self.particles)
+            max_y = max(p['pos'][1] + p['size'] for p in self.particles)
+
+            new_width = max(1, int(max_x - min_x))
+            new_height = max(1, int(max_y - min_y))
+            self.image = pygame.Surface((new_width, new_height), pygame.SRCALPHA)
+            self.rect = self.image.get_rect(topleft=(min_x, min_y))
+
+            # Desenhar partículas na nova superfície
+            for p in self.particles:
+                draw_color = (p['color'][0], p['color'][1], p['color'][2], p['alpha'])
+                pygame.draw.circle(self.image, draw_color, (int(p['pos'][0] - min_x), int(p['pos'][1] - min_y)), p['size'] // 2)
+        else:
+            self.image = pygame.Surface((1, 1), pygame.SRCALPHA) # Superfície vazia se não houver mais partículas
 
 class Explosion(pygame.sprite.Sprite):
     """Representa o efeito visual de uma explosão com partículas."""
