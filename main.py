@@ -18,9 +18,11 @@ class Game:
     def __init__(self):
         """Inicializa o jogo, configurando a tela, carregando recursos e preparando o estado inicial."""
         pygame.init()
+        pygame.mixer.init() # Initialize the mixer
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("1942 Clone")
 
+        self._load_sounds()
         self._show_splash_screen()
 
         self.clock = pygame.time.Clock()
@@ -65,6 +67,23 @@ class Game:
 
         self.ADD_CLOUD = pygame.USEREVENT + 2
         pygame.time.set_timer(self.ADD_CLOUD, 1500)
+        
+        self.start_game_sounds()
+
+    def _load_sounds(self):
+        """Carrega todos os sons do jogo."""
+        self.sounds = {
+            'splash': pygame.mixer.Sound("assets/sounds/Splash.wav"),
+            'initial': pygame.mixer.Sound("assets/sounds/Inicial.wav"),
+            'motor': pygame.mixer.Sound("assets/sounds/Motor.wav"),
+            'explosion': pygame.mixer.Sound("assets/sounds/Explosao.wav"),
+            'gameover': pygame.mixer.Sound("assets/sounds/Gameover.wav")
+        }
+
+    def start_game_sounds(self):
+        """Inicia os sons do jogo."""
+        self.sounds['initial'].play()
+        self.sounds['motor'].play(loops=-1)
 
     def load_highscore(self):
         """Carrega o recorde de pontuação do arquivo 'highscore.txt'. Se o arquivo não existir ou estiver vazio, o recorde é 0."""
@@ -162,6 +181,7 @@ class Game:
                 self.score += 10 # Increase score for each hit
                 explosion = Explosion(enemy.rect.center)
                 self.all_sprites.add(explosion)
+                self.sounds['explosion'].play()
 
         # Check for collisions: player bullets hitting enemy bullets
         pygame.sprite.groupcollide(self.player.bullets, self.enemy_bullets, True, True, bullet_hit_enemy_bullet)
@@ -225,6 +245,7 @@ class Game:
 
     def _show_splash_screen(self):
         """Exibe a tela de splash inicial com o logo do jogo e aguarda uma tecla ser pressionada."""
+        self.sounds['splash'].play()
         splash_image = pygame.image.load("assets/images/Splash.jpg").convert()
         splash_image = pygame.transform.scale(splash_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
         logo_image = pygame.image.load("assets/images/Logo.png").convert_alpha()
@@ -248,9 +269,12 @@ class Game:
                     sys.exit()
                 if event.type == pygame.KEYDOWN:
                     waiting_for_key = False
+        self.sounds['splash'].stop()
 
     def _show_game_over_screen(self):
         """Exibe a tela de Game Over, mostrando a pontuação final, o recorde e opções para um novo jogo ou sair."""
+        pygame.mixer.stop()
+        self.sounds['gameover'].play()
         self.screen.fill(BLACK)
 
         # Load and display Logo.png
@@ -313,6 +337,7 @@ class Game:
         pygame.time.set_timer(self.ADD_CLOUD, 1500)
 
         self.running = True # Set running to True to restart the main game loop
+        self.start_game_sounds()
 
     def draw(self):
         """Desenha todos os elementos do jogo na tela, incluindo fundo, sprites e HUD."""
