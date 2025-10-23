@@ -21,16 +21,10 @@ class EnemyBullet(pygame.sprite.Sprite):
         self.image.fill((255, 0, 0))  # Red
         self.rect = self.image.get_rect(center=(x, y))
 
-        # Calculate direction towards player
-        target_x, target_y = player_pos
-        dx, dy = target_x - x, target_y - y
-        distance = (dx**2 + dy**2)**0.5
-        if distance == 0: # Avoid division by zero
-            self.speed_x = 0
-            self.speed_y = bullet_speed # Default downward speed
-        else:
-            self.speed_x = (dx / distance) * bullet_speed # Bullet speed
-            self.speed_y = (dy / distance) * bullet_speed # Bullet speed
+        # Bullets shoot straight down
+        self.speed_x = 0
+        self.speed_y = bullet_speed # Always move downwards
+
 
     def update(self):
         self.rect.x += self.speed_x

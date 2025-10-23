@@ -33,12 +33,7 @@ class Game:
 
         # --- Background Creation ---
         # Load the background image, which is a tileable vertical strip
-        try:
-            bg_tile = pygame.image.load("assets/images/fundo.png").convert()
-        except Exception as e:
-            print(f"Error loading background image 'assets/images/fundo.png': {e}")
-            pygame.quit()
-            sys.exit()
+        bg_tile = pygame.image.load("assets/images/fundo.png").convert()
         tile_width = bg_tile.get_width()
         tile_height = bg_tile.get_height()
 
