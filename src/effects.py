@@ -1,8 +1,9 @@
 # src/effects.py
 import pygame
 import random
-import math # Import math module
+import math
 from src.config import *
+from PIL import Image, ImageSequence # Importar Pillow
 
 class BombEffect(pygame.sprite.Sprite):
     """Representa o efeito visual de uma bomba explodindo na tela com um sistema de partículas."""
@@ -137,14 +138,64 @@ class Explosion(pygame.sprite.Sprite):
             self.image = pygame.Surface((new_width, new_height), pygame.SRCALPHA)
             self.rect = self.image.get_rect(topleft=(min_x, min_y))
 
-            # Draw particles onto the new surface
+            # Desenhar partículas na nova superfície
             for p in self.particles:
                 draw_color = (p['color'][0], p['color'][1], p['color'][2], p['alpha'])
                 pygame.draw.circle(self.image, draw_color, (int(p['pos'][0] - min_x), int(p['pos'][1] - min_y)), p['size'] // 2)
         else:
-            self.image = pygame.Surface((1, 1), pygame.SRCALPHA) # Empty surface if no particles left
+            self.image = pygame.Surface((1, 1), pygame.SRCALPHA) # Superfície vazia se não houver mais partículas
 
+class GifExplosion(pygame.sprite.Sprite):
+    """Representa uma explosão animada a partir de um GIF usando Pillow."""
+    def __init__(self, center, size=64):
+        super().__init__()
+        self.frames = []
+        self.frame_durations = []
 
+        try:
+            pil_image = Image.open("assets/images/Explosion.gif")
+        except Exception as e:
+            print(f"Error loading explosion GIF 'assets/images/Explosion.gif': {e}")
+            self.kill() # Remove o sprite se o GIF não puder ser carregado
+            return
+
+        for frame in ImageSequence.Iterator(pil_image):
+            # Converte o frame PIL para superfície Pygame
+            frame_image = frame.convert('RGBA')
+            pygame_image = pygame.image.fromstring(
+                frame_image.tobytes(), frame_image.size, frame_image.mode
+            ).convert_alpha()
+
+            # Redimensiona o frame para o tamanho quadrado desejado
+            scaled_image = pygame.transform.scale(pygame_image, (size, size))
+            self.frames.append(scaled_image)
+            
+            # Armazena a duração do frame, se disponível, caso contrário, usa um padrão
+            self.frame_durations.append(frame.info.get('duration', 50))
+
+        if not self.frames:
+            print("No frames found in Explosion.gif")
+            self.kill()
+            return
+
+        self.current_frame = 0
+        self.image = self.frames[self.current_frame]
+        self.rect = self.image.get_rect(center=center)
+        
+        self.last_anim_time = pygame.time.get_ticks()
+        self.anim_delay = self.frame_durations[0] if self.frame_durations else 50
+
+    def update(self):
+        now = pygame.time.get_ticks()
+        if now - self.last_anim_time > self.anim_delay:
+            self.last_anim_time = now
+            self.current_frame += 1 # Incrementa o frame diretamente
+            
+            if self.current_frame < len(self.frames):
+                self.image = self.frames[self.current_frame]
+                self.anim_delay = self.frame_durations[self.current_frame]
+            else:
+                self.kill() # Remove a explosão quando a animação termina
 
 class Cloud(pygame.sprite.Sprite):
     """Representa uma nuvem de fundo que se move pela tela."""

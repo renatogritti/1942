@@ -4,7 +4,7 @@ import random
 from src.config import *
 from src.player import Player
 from src.enemy import Enemy
-from src.effects import BombEffect, Explosion, Cloud
+from src.effects import BombEffect, Explosion, Cloud, GifExplosion
 from src.bullet import EnemyBullet
 from src.coin import Coin
 from src.island import Island
@@ -155,8 +155,11 @@ class Game:
             for enemy in enemies_hit:
                 self.score += 10
                 self.sounds['explosion'].play()
-                explosion = Explosion(enemy.rect.center)
-                self.all_sprites.add(explosion)
+                # Adiciona ambos os efeitos de explosão
+                particle_explosion = Explosion(enemy.rect.center)
+                gif_explosion = GifExplosion(enemy.rect.center, size=64) # Passa o tamanho do avião
+                self.all_sprites.add(particle_explosion)
+                self.all_sprites.add(gif_explosion)
                 if random.random() > 0.7: # 30% de chance
                     coin = Coin(enemy.rect.center)
                     self.all_sprites.add(coin)
@@ -169,8 +172,11 @@ class Game:
         hits = pygame.sprite.spritecollide(self.player, self.enemies, True)
         for hit in hits:
             self.player.energy -= 30
-            explosion = Explosion(hit.rect.center)
-            self.all_sprites.add(explosion)
+            # Adiciona ambos os efeitos de explosão
+            particle_explosion = Explosion(hit.rect.center)
+            gif_explosion = GifExplosion(hit.rect.center, size=64) # Passa o tamanho do avião
+            self.all_sprites.add(particle_explosion)
+            self.all_sprites.add(gif_explosion)
             if self.player.energy <= 0:
                 self.save_highscore()
                 self._show_game_over_screen()
