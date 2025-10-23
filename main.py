@@ -13,6 +13,8 @@ class Game:
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("1942 Clone")
 
+        self._show_splash_screen()
+
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 36)
         self.running = True
@@ -98,6 +100,8 @@ class Game:
                     self.player.shoot()
                 elif event.key == pygame.K_LALT or event.key == pygame.K_RALT:
                     self.use_bomb()
+                elif event.key == pygame.K_q:
+                    self.running = False
             elif event.type == self.ADD_ENEMY:
                 new_enemy = Enemy(self, self.current_difficulty_settings) # Pass game instance and difficulty settings to Enemy
                 self.enemies.add(new_enemy)
@@ -153,7 +157,8 @@ class Game:
             self.all_sprites.add(explosion)
             self.player.reset()
             if self.player.lives <= 0:
-                self.running = False
+                self.save_highscore()
+                self._show_game_over_screen()
 
         # Check for collisions: enemy bullets hitting player
         enemy_bullet_hits = pygame.sprite.spritecollide(self.player, self.enemy_bullets, True)
@@ -163,7 +168,8 @@ class Game:
             self.all_sprites.add(explosion)
             self.player.reset()
             if self.player.lives <= 0:
-                self.running = False
+                self.save_highscore()
+                self._show_game_over_screen()
 
     def draw_text(self, text, x, y):
         text_surface = self.font.render(text, True, WHITE)
@@ -185,6 +191,94 @@ class Game:
         shadow_image.fill((0, 0, 0, 120), special_flags=pygame.BLEND_RGBA_MULT)
         
         self.screen.blit(shadow_image, shadow_pos)
+
+    def _show_splash_screen(self):
+        splash_image = pygame.image.load("assets/images/Splash.jpg").convert()
+        splash_image = pygame.transform.scale(splash_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
+        logo_image = pygame.image.load("assets/images/Logo.png").convert_alpha()
+
+        # Scale logo to fit, e.g., 50% of screen width, maintaining aspect ratio
+        logo_width = int(SCREEN_WIDTH * 0.5)
+        logo_height = int(logo_image.get_height() * (logo_width / logo_image.get_width()))
+        logo_image = pygame.transform.scale(logo_image, (logo_width, logo_height))
+
+        logo_rect = logo_image.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+
+        self.screen.blit(splash_image, (0, 0))
+        self.screen.blit(logo_image, logo_rect)
+        pygame.display.flip()
+
+        waiting_for_key = True
+        while waiting_for_key:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    waiting_for_key = False
+
+    def _show_game_over_screen(self):
+        self.screen.fill(BLACK)
+
+        # Load and display Logo.png
+        logo_image = pygame.image.load("assets/images/Logo.png").convert_alpha()
+        logo_width = int(SCREEN_WIDTH * 0.6) # Slightly larger than splash screen
+        logo_height = int(logo_image.get_height() * (logo_width / logo_image.get_width()))
+        logo_image = pygame.transform.scale(logo_image, (logo_width, logo_height))
+        logo_rect = logo_image.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 4))
+        self.screen.blit(logo_image, logo_rect)
+
+        # Display Score and High Score
+        score_text = self.font.render(f"YOUR SCORE: {self.score}", True, WHITE)
+        score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+        self.screen.blit(score_text, score_rect)
+
+        highscore_text = self.font.render(f"HIGH SCORE: {self.highscore}", True, WHITE)
+        highscore_rect = highscore_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50))
+        self.screen.blit(highscore_text, highscore_rect)
+
+        # Display options
+        options_text = self.font.render("Press 'N' for New Game or 'Q' to Quit", True, WHITE)
+        options_rect = options_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 150))
+        self.screen.blit(options_text, options_rect)
+
+        pygame.display.flip()
+
+        waiting_for_input = True
+        while waiting_for_input:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_n:
+                        self._reset_game()
+                        waiting_for_input = False
+                    elif event.key == pygame.K_q:
+                        pygame.quit()
+                        sys.exit()
+
+    def _reset_game(self):
+        self.score = 0
+        self.load_highscore()
+        self.current_difficulty_index = INITIAL_DIFFICULTY_STAGE_INDEX
+        self.current_difficulty_settings = DIFFICULTY_STAGES[self.current_difficulty_index]
+
+        # Clear all sprite groups and re-initialize
+        self.all_sprites.empty()
+        self.enemies.empty()
+        self.clouds.empty()
+        self.enemy_bullets.empty()
+
+        self.player = Player(self.all_sprites)
+        self.all_sprites.add(self.player)
+
+        # Reset timers
+        min_delay, max_delay = self.current_difficulty_settings["enemy_spawn_delay"]
+        pygame.time.set_timer(self.ADD_ENEMY, random.randint(min_delay, max_delay))
+        pygame.time.set_timer(self.ADD_CLOUD, 1500)
+
+        self.running = True # Set running to True to restart the main game loop
 
     def draw(self):
         # 1. Draw scrolling background
