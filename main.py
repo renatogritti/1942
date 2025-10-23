@@ -77,8 +77,10 @@ class Game:
             'initial': pygame.mixer.Sound("assets/sounds/Inicial.wav"),
             'motor': pygame.mixer.Sound("assets/sounds/Motor.wav"),
             'explosion': pygame.mixer.Sound("assets/sounds/Explosao.wav"),
-            'gameover': pygame.mixer.Sound("assets/sounds/Gameover.wav")
+            'gameover': pygame.mixer.Sound("assets/sounds/Gameover.wav"),
+            'tiro': pygame.mixer.Sound("assets/sounds/Tiro.wav")
         }
+        self.sounds['motor'].set_volume(0.3) # Lower the volume of the motor sound
 
     def start_game_sounds(self):
         """Inicia os sons do jogo."""
@@ -130,6 +132,7 @@ class Game:
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LCTRL or event.key == pygame.K_RCTRL:
                     self.player.shoot()
+                    self.sounds['tiro'].play()
                 elif event.key == pygame.K_LALT or event.key == pygame.K_RALT:
                     self.use_bomb()
                 elif event.key == pygame.K_q:
@@ -349,6 +352,8 @@ class Game:
         self.draw_shadow(self.player.image, self.player.rect)
         for enemy in self.enemies:
             self.draw_shadow(enemy.image, enemy.rect)
+        for cloud in self.clouds:
+            self.draw_shadow(cloud.image, cloud.rect)
 
         # 3. Draw clouds
         self.clouds.draw(self.screen)
