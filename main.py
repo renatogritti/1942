@@ -8,7 +8,9 @@ from src.effects import BombEffect, Explosion, Cloud
 from src.bullet import EnemyBullet # Import EnemyBullet
 
 class Game:
+    """Representa a classe principal do jogo 1942 Clone. Gerencia o ciclo de vida do jogo, estados, sprites e interações."""
     def __init__(self):
+        """Inicializa o jogo, configurando a tela, carregando recursos e preparando o estado inicial."""
         pygame.init()
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("1942 Clone")
@@ -59,6 +61,7 @@ class Game:
         pygame.time.set_timer(self.ADD_CLOUD, 1500)
 
     def load_highscore(self):
+        """Carrega o recorde de pontuação do arquivo 'highscore.txt'. Se o arquivo não existir ou estiver vazio, o recorde é 0."""
         try:
             with open("highscore.txt", "r") as f:
                 self.highscore = int(f.read())
@@ -66,11 +69,13 @@ class Game:
             self.highscore = 0
 
     def save_highscore(self):
+        """Salva a pontuação atual como novo recorde se for maior que o recorde anterior."""
         if self.score > self.highscore:
             with open("highscore.txt", "w") as f:
                 f.write(str(self.score))
 
     def run(self):
+        """Inicia o loop principal do jogo, processando eventos, atualizando o estado e desenhando na tela."""
         while self.running:
             self.clock.tick(FPS)
             self.events()
@@ -81,6 +86,7 @@ class Game:
         sys.exit()
 
     def use_bomb(self):
+        """Ativa uma bomba, destruindo todos os inimigos na tela e adicionando pontos ao placar."""
         if self.player.bombs > 0:
             self.player.bombs -= 1
             # Create the visual effect
@@ -92,6 +98,7 @@ class Game:
                 self.score += 5 # Give some points for bomb kills
 
     def events(self):
+        """Processa todos os eventos do Pygame, como entrada do usuário e eventos personalizados."""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -112,6 +119,7 @@ class Game:
                 self.all_sprites.add(new_cloud)
 
     def update(self):
+        """Atualiza o estado de todos os elementos do jogo, incluindo movimento, colisões e dificuldade."""
         # Check and update difficulty stage
         if self.current_difficulty_index + 1 < len(DIFFICULTY_STAGES):
             next_stage_threshold = DIFFICULTY_STAGES[self.current_difficulty_index + 1]["score_threshold"]
@@ -172,17 +180,31 @@ class Game:
                 self._show_game_over_screen()
 
     def draw_text(self, text, x, y):
+        """Desenha texto na tela.
+
+        Args:
+            text (str): O texto a ser desenhado.
+            x (int): A coordenada X da posição superior esquerda do texto.
+            y (int): A coordenada Y da posição superior esquerda do texto.
+        """
         text_surface = self.font.render(text, True, WHITE)
         text_rect = text_surface.get_rect(topleft=(x, y))
         self.screen.blit(text_surface, text_rect)
 
     def draw_hud(self):
+        """Desenha a interface de usuário (HUD) na tela, incluindo pontuação, recorde, vidas e bombas."""
         self.draw_text(f"Score: {self.score}", 10, 10)
         self.draw_text(f"High Score: {self.highscore}", 10, 50)
         self.draw_text(f"Lives: {self.player.lives}", SCREEN_WIDTH - 120, 10)
         self.draw_text(f"Bombs: {self.player.bombs}", SCREEN_WIDTH - 120, 50)
 
     def draw_shadow(self, surface, rect):
+        """Desenha uma sombra para um sprite.
+
+        Args:
+            surface (pygame.Surface): A superfície do sprite.
+            rect (pygame.Rect): O retângulo do sprite.
+        """
         shadow_offset = (15, 25) # How far the shadow is from the plane
         shadow_pos = (rect.x + shadow_offset[0], rect.y + shadow_offset[1])
         
@@ -193,6 +215,7 @@ class Game:
         self.screen.blit(shadow_image, shadow_pos)
 
     def _show_splash_screen(self):
+        """Exibe a tela de splash inicial com o logo do jogo e aguarda uma tecla ser pressionada."""
         splash_image = pygame.image.load("assets/images/Splash.jpg").convert()
         splash_image = pygame.transform.scale(splash_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
         logo_image = pygame.image.load("assets/images/Logo.png").convert_alpha()
@@ -218,6 +241,7 @@ class Game:
                     waiting_for_key = False
 
     def _show_game_over_screen(self):
+        """Exibe a tela de Game Over, mostrando a pontuação final, o recorde e opções para um novo jogo ou sair."""
         self.screen.fill(BLACK)
 
         # Load and display Logo.png
@@ -259,6 +283,7 @@ class Game:
                         sys.exit()
 
     def _reset_game(self):
+        """Reinicia o estado do jogo para iniciar uma nova partida."""
         self.score = 0
         self.load_highscore()
         self.current_difficulty_index = INITIAL_DIFFICULTY_STAGE_INDEX
@@ -281,6 +306,7 @@ class Game:
         self.running = True # Set running to True to restart the main game loop
 
     def draw(self):
+        """Desenha todos os elementos do jogo na tela, incluindo fundo, sprites e HUD."""
         # 1. Draw scrolling background
         self.screen.blit(self.background, (0, self.bg_y1))
         self.screen.blit(self.background, (0, self.bg_y2))

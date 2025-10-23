@@ -5,7 +5,13 @@ from src.bullet import Bullet
 from PIL import Image, ImageSequence
 
 class Player(pygame.sprite.Sprite):
+    """Representa o avião do jogador no jogo."""
     def __init__(self, all_sprites):
+        """Inicializa o jogador com suas propriedades, como posição, vidas e bombas.
+
+        Args:
+            all_sprites (pygame.sprite.Group): O grupo de todos os sprites do jogo.
+        """
         super().__init__()
         self.all_sprites = all_sprites
         self.bullets = pygame.sprite.Group()
@@ -22,7 +28,7 @@ class Player(pygame.sprite.Sprite):
         self.anim_delay = self.frame_durations[0] if self.frame_durations else 50
 
     def load_animated_gif(self):
-        """ Loads all frames from a GIF and converts them to Pygame surfaces. """
+        """Carrega todos os frames de um GIF animado e os converte para superfícies Pygame."""
         self.animation_frames = []
         self.frame_durations = []
         
@@ -54,6 +60,7 @@ class Player(pygame.sprite.Sprite):
             self.animation_frames.append(scaled_image)
 
     def update(self):
+        """Atualiza o estado do jogador, incluindo animação, movimento e restrição de tela."""
         # --- Animation Loop ---
         now = pygame.time.get_ticks()
         if now - self.last_anim_time > self.anim_delay:
@@ -88,10 +95,11 @@ class Player(pygame.sprite.Sprite):
             self.rect.bottom = SCREEN_HEIGHT
 
     def reset(self):
-        """ Resets the player's position to the initial spot. """
+        """Reinicia a posição do jogador para o local inicial."""
         self.rect.center = (SCREEN_WIDTH / 2, SCREEN_HEIGHT - 60)
 
     def shoot(self):
+        """Cria e dispara um projétil do jogador."""
         bullet = Bullet(self.rect.centerx, self.rect.top)
         self.all_sprites.add(bullet)
         self.bullets.add(bullet)

@@ -1,5 +1,7 @@
 # src/config.py
 
+"""Configurações globais e estágios de dificuldade para o jogo 1942 Clone."""
+
 # Screen dimensions
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600

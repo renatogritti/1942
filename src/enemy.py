@@ -6,12 +6,19 @@ from PIL import Image, ImageSequence
 from src.bullet import EnemyBullet # Import EnemyBullet
 
 class Enemy(pygame.sprite.Sprite):
+    """Representa um avião inimigo no jogo."""
     # Class variables to store frames, loaded only once to save memory/cpu
     animation_frames = []
     frame_durations = []
     _is_loaded = False
 
-    def __init__(self, game_instance, difficulty_settings): # Accept game_instance and difficulty_settings
+    def __init__(self, game_instance, difficulty_settings):
+        """Inicializa um inimigo com base nas configurações de dificuldade.
+
+        Args:
+            game_instance (Game): A instância do jogo principal.
+            difficulty_settings (dict): Dicionário com as configurações de dificuldade para este inimigo.
+        """
         super().__init__()
         self.game_instance = game_instance # Store game instance
         self.difficulty_settings = difficulty_settings # Store difficulty settings
@@ -39,7 +46,7 @@ class Enemy(pygame.sprite.Sprite):
 
     @classmethod
     def _load_animated_gif(cls):
-        """ Class method to load the GIF frames into class variables. """
+        """Método de classe para carregar os frames do GIF do inimigo em variáveis de classe."""
         try:
             pil_image = Image.open("assets/images/enemy.gif")
         except Exception as e:
@@ -70,7 +77,11 @@ class Enemy(pygame.sprite.Sprite):
         cls._is_loaded = True
 
     def _move(self, player_pos):
-        """ Handles enemy movement based on its type. """
+        """Gerencia o movimento do inimigo com base no seu tipo.
+
+        Args:
+            player_pos (tuple): A posição (x, y) atual do jogador.
+        """
         if self.type == 'straight':
             self.rect.y += self.speed_y
         elif self.type == 'weaving':
@@ -88,7 +99,11 @@ class Enemy(pygame.sprite.Sprite):
             self.rect.y += self.speed_y
 
     def _shoot(self, player_pos):
-        """ Handles enemy shooting. """
+        """Gerencia o disparo de projéteis pelo inimigo.
+
+        Args:
+            player_pos (tuple): A posição (x, y) atual do jogador.
+        """
         now = pygame.time.get_ticks()
         if now - self.last_shot_time > self.shoot_delay:
             self.last_shot_time = now
@@ -98,6 +113,11 @@ class Enemy(pygame.sprite.Sprite):
             self.game_instance.enemy_bullets.add(bullet)
 
     def update(self, player_pos): # Accept player_pos
+        """Atualiza o estado do inimigo, incluindo animação, movimento e disparo.
+
+        Args:
+            player_pos (tuple): A posição (x, y) atual do jogador.
+        """
         # --- Animation ---
         now = pygame.time.get_ticks()
         if now - self.last_anim_time > self.anim_delay:

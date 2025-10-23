@@ -5,20 +5,32 @@ import math # Import math module
 from src.config import *
 
 class BombEffect(pygame.sprite.Sprite):
+    """Representa o efeito visual de uma bomba explodindo na tela."""
     def __init__(self, center):
+        """Inicializa o efeito da bomba.
+
+        Args:
+            center (tuple): A posição central (x, y) onde a bomba explode.
+        """
         super().__init__()
-        self.image = pygame.Surface((150, 150), pygame.SRCALPHA)
         pygame.draw.circle(self.image, (255, 255, 0, 150), (75, 75), 75)
         self.rect = self.image.get_rect(center=center)
         self.duration = 30 # frames
 
     def update(self):
+        """Atualiza a duração do efeito da bomba e o remove quando termina."""
         self.duration -= 1
         if self.duration <= 0:
             self.kill()
 
 class Explosion(pygame.sprite.Sprite):
+    """Representa o efeito visual de uma explosão com partículas."""
     def __init__(self, center):
+        """Inicializa a explosão com partículas.
+
+        Args:
+            center (tuple): A posição central (x, y) da explosão.
+        """
         super().__init__()
         self.center = center
         self.frame = 0
@@ -47,6 +59,7 @@ class Explosion(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=center)
 
     def update(self):
+        """Atualiza o estado da explosão, movendo e desvanecendo as partículas."""
         self.frame += 1
         if self.frame > self.max_frames and not self.particles:
             self.kill()
@@ -83,7 +96,9 @@ class Explosion(pygame.sprite.Sprite):
 
 
 class Cloud(pygame.sprite.Sprite):
+    """Representa uma nuvem de fundo que se move pela tela."""
     def __init__(self):
+        """Inicializa uma nuvem com tamanho, forma e posição aleatórios."""
         super().__init__()
         # Create a semi-transparent white cloud surface
         cloud_width = random.randint(100, 200)
@@ -106,6 +121,7 @@ class Cloud(pygame.sprite.Sprite):
         self.speed = random.randint(1, 2)
 
     def update(self):
+        """Atualiza a posição da nuvem e a remove se sair da tela."""
         self.rect.y += self.speed
         if self.rect.top > SCREEN_HEIGHT:
             self.kill()
