@@ -11,7 +11,7 @@ import random
 import sys
 from src.config import *
 from PIL import Image, ImageSequence
-from src.bullet import EnemyBullet # Import EnemyBullet
+from src.game_objects.bullet import EnemyBullet # Import EnemyBullet
 from typing import Dict, Any, List, Tuple
 
 

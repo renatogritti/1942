@@ -71,7 +71,7 @@ class BombEffect(pygame.sprite.Sprite):
             p['pos'][0] += p['vel'][0]
             p['pos'][1] += p['vel'][1]
             p['lifetime'] -= 1
-            p['alpha'] = max(0, min(255, int(255 * (p['lifetime'] / self.max_frames))))  # Ajustar alpha com base no tempo de vida
+            p['alpha'] = max(0, min(255, int(255 * (p['lifetime'] / 15))))  # Limita o alpha entre 0 e 255
             if p['lifetime'] <= 0:
                 self.particles.remove(p)
 

@@ -9,7 +9,7 @@ Autoria: Renato Gritti
 import pygame
 import sys
 from src.config import *
-from src.bullet import Bullet
+from src.game_objects.bullet import Bullet # Atualizado o import
 from PIL import Image, ImageSequence
 from typing import List, Tuple, Any
 
