@@ -7,6 +7,7 @@ from src.enemy import Enemy
 from src.effects import BombEffect, Explosion, Cloud
 from src.bullet import EnemyBullet
 from src.coin import Coin
+from src.island import Island
 
 def bullet_hit_enemy_bullet(player_bullet, enemy_bullet):
     """Callback de colisão para pygame.sprite.groupcollide que infla o rect do tiro inimigo."""
@@ -38,6 +39,7 @@ class Game:
         self.all_sprites = pygame.sprite.Group()
         self.enemies = pygame.sprite.Group()
         self.clouds = pygame.sprite.Group()
+        self.islands = pygame.sprite.Group()  # Grupo para ilhas
         self.enemy_bullets = pygame.sprite.Group()
         self.coins = pygame.sprite.Group()
         self.player = Player(self.all_sprites)
@@ -78,6 +80,8 @@ class Game:
         pygame.time.set_timer(self.ADD_ENEMY, random.randint(min_delay, max_delay))
         self.ADD_CLOUD = pygame.USEREVENT + 2
         pygame.time.set_timer(self.ADD_CLOUD, 1500)
+        self.ADD_ISLAND = pygame.USEREVENT + 3
+        pygame.time.set_timer(self.ADD_ISLAND, random.randint(5000, 10000))
 
     def start_game_sounds(self):
         """Inicia os sons do jogo."""
@@ -116,6 +120,10 @@ class Game:
                 new_cloud = Cloud()
                 self.clouds.add(new_cloud)
                 self.all_sprites.add(new_cloud)
+            elif event.type == self.ADD_ISLAND:
+                new_island = Island()
+                self.islands.add(new_island)
+                self.all_sprites.add(new_island)
 
     def update(self):
         """Atualiza o estado de todos os elementos do jogo."""
@@ -195,12 +203,20 @@ class Game:
         """Desenha todos os elementos do jogo na tela."""
         self.screen.blit(self.background, (0, self.bg_y1))
         self.screen.blit(self.background, (0, self.bg_y2))
-        
+
+        # Desenha os elementos de fundo (ilhas)
+        self.islands.draw(self.screen)
+
+        # Desenha as sombras dos elementos principais
         for sprite in self.all_sprites:
             if isinstance(sprite, (Player, Enemy, Cloud)):
                 self.draw_shadow(sprite.image, sprite.rect)
 
-        self.all_sprites.draw(self.screen)
+        # Desenha os sprites principais (exceto ilhas, que já foram desenhadas)
+        for sprite in self.all_sprites:
+            if not isinstance(sprite, Island):
+                self.screen.blit(sprite.image, sprite.rect)
+
         self.enemy_bullets.draw(self.screen)
 
         self.draw_hud()
@@ -309,6 +325,7 @@ class Game:
         self.all_sprites.empty()
         self.enemies.empty()
         self.clouds.empty()
+        self.islands.empty()
         self.enemy_bullets.empty()
         self.coins.empty()
         self.all_sprites.add(self.player)
