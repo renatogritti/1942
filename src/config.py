@@ -1,31 +1,38 @@
-# src/config.py
+"""
+Projeto: Clone 1942
+Descrição: Módulo de configuração global para o jogo 1942 Clone.
+           Define constantes para dimensões da tela, cores, configurações do jogador
+           e os diferentes estágios de dificuldade do jogo.
+Autoria: Renato Gritti
+"""
 
-"""Configurações globais e estágios de dificuldade para o jogo 1942 Clone."""
+from typing import List, Dict, Any, Tuple
 
-# Screen dimensions
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
-FPS = 60
+# Dimensões da tela
+SCREEN_WIDTH: int = 800
+SCREEN_HEIGHT: int = 600
+FPS: int = 60
 
-# Colors
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
+# Cores
+BLACK: Tuple[int, int, int] = (0, 0, 0)
+WHITE: Tuple[int, int, int] = (255, 255, 255)
 
-# Player settings
-PLAYER_SPEED = 5
+# Configurações do jogador
+PLAYER_SPEED: int = 5
 
-# Difficulty Settings
-DIFFICULTY_STAGES = [
-    # Stage 0: Very Easy (Initial)
+# Estágios de Dificuldade
+DIFFICULTY_STAGES: List[Dict[str, Any]] = [
+    # Estágio 0: Muito Fácil (Inicial)
     {
         "score_threshold": 0,
-        "enemy_spawn_delay": (1500, 2500), # ms (min, max)
+        "enemy_spawn_delay": (1500, 2500),  # ms (min, max)
         "enemy_speed_y": (3, 4),
         "enemy_speed_x": (1, 2),
         "enemy_shoot_delay": (1000, 1500),
         "enemy_bullet_speed": 5,
-        "enemy_types_available": ["straight", "weaving"],    },
-    # Stage 1: Easy
+        "enemy_types_available": ["straight", "weaving"],
+    },
+    # Estágio 1: Fácil
     {
         "score_threshold": 100,
         "enemy_spawn_delay": (1200, 2000),
@@ -35,7 +42,7 @@ DIFFICULTY_STAGES = [
         "enemy_bullet_speed": 6,
         "enemy_types_available": ["straight", "weaving"],
     },
-    # Stage 2: Medium
+    # Estágio 2: Médio
     {
         "score_threshold": 300,
         "enemy_spawn_delay": (1000, 1800),
@@ -45,7 +52,7 @@ DIFFICULTY_STAGES = [
         "enemy_bullet_speed": 7,
         "enemy_types_available": ["straight", "weaving", "diving"],
     },
-    # Stage 3: Hard
+    # Estágio 3: Difícil
     {
         "score_threshold": 500,
         "enemy_spawn_delay": (800, 1500),
@@ -55,7 +62,7 @@ DIFFICULTY_STAGES = [
         "enemy_bullet_speed": 8,
         "enemy_types_available": ["straight", "weaving", "diving"],
     },
-    # Stage 4: Very Hard (and beyond, difficulty caps here for now)
+    # Estágio 4: Muito Difícil (e além, a dificuldade se limita aqui por enquanto)
     {
         "score_threshold": 1000,
         "enemy_spawn_delay": (600, 1200),
@@ -67,5 +74,5 @@ DIFFICULTY_STAGES = [
     },
 ]
 
-# Initial difficulty stage
-INITIAL_DIFFICULTY_STAGE_INDEX = 0
+# Índice do estágio de dificuldade inicial
+INITIAL_DIFFICULTY_STAGE_INDEX: int = 0
