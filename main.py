@@ -7,6 +7,12 @@ from src.enemy import Enemy
 from src.effects import BombEffect, Explosion, Cloud
 from src.bullet import EnemyBullet # Import EnemyBullet
 
+def bullet_hit_enemy_bullet(player_bullet, enemy_bullet):
+    """Callback de colisão para pygame.sprite.groupcollide que infla o rect do tiro inimigo."""
+    # Aumenta a área de colisão do tiro inimigo em 10 pixels em cada direção
+    inflated_rect = enemy_bullet.rect.inflate(20, 20)
+    return inflated_rect.colliderect(player_bullet.rect)
+
 class Game:
     """Representa a classe principal do jogo 1942 Clone. Gerencia o ciclo de vida do jogo, estados, sprites e interações."""
     def __init__(self):
@@ -156,6 +162,9 @@ class Game:
                 self.score += 10 # Increase score for each hit
                 explosion = Explosion(enemy.rect.center)
                 self.all_sprites.add(explosion)
+
+        # Check for collisions: player bullets hitting enemy bullets
+        pygame.sprite.groupcollide(self.player.bullets, self.enemy_bullets, True, True, bullet_hit_enemy_bullet)
 
         # Check for collisions: enemies hitting player
         hits = pygame.sprite.spritecollide(self.player, self.enemies, True)
