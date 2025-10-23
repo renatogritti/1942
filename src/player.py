@@ -7,7 +7,7 @@ from PIL import Image, ImageSequence
 class Player(pygame.sprite.Sprite):
     """Representa o avião do jogador no jogo."""
     def __init__(self, all_sprites):
-        """Inicializa o jogador com suas propriedades, como posição, vidas e bombas.
+        """Inicializa o jogador com suas propriedades, como posição, energia e bombas.
 
         Args:
             all_sprites (pygame.sprite.Group): O grupo de todos os sprites do jogo.
@@ -21,7 +21,8 @@ class Player(pygame.sprite.Sprite):
         self.image = self.animation_frames[self.current_frame]
         self.rect = self.image.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 60))
         
-        self.lives = 3
+        self.max_energy = 100
+        self.energy = self.max_energy
         self.bombs = 1
         self.last_anim_time = 0
         # Use the GIF's own duration for the delay, or a default
