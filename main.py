@@ -1,0 +1,218 @@
+import pygame
+import sys
+import random
+from src.config import *
+from src.player import Player
+from src.enemy import Enemy
+from src.effects import BombEffect, Explosion, Cloud
+from src.bullet import EnemyBullet # Import EnemyBullet
+
+class Game:
+    def __init__(self):
+        pygame.init()
+        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        pygame.display.set_caption("1942 Clone")
+
+        self.clock = pygame.time.Clock()
+        self.font = pygame.font.Font(None, 36)
+        self.running = True
+        self.score = 0
+        self.load_highscore()
+
+        # Difficulty Management
+        self.current_difficulty_index = INITIAL_DIFFICULTY_STAGE_INDEX
+        self.current_difficulty_settings = DIFFICULTY_STAGES[self.current_difficulty_index]
+
+        # Sprite Groups
+        self.all_sprites = pygame.sprite.Group()
+        self.enemies = pygame.sprite.Group()
+        self.clouds = pygame.sprite.Group()
+        self.enemy_bullets = pygame.sprite.Group() # Initialize enemy_bullets group
+        self.player = Player(self.all_sprites)
+        self.all_sprites.add(self.player)
+
+        # --- Background Creation ---
+        # Load the background image, which is a tileable vertical strip
+        try:
+            bg_tile = pygame.image.load("assets/images/fundo.png").convert()
+        except Exception as e:
+            print(f"Error loading background image 'assets/images/fundo.png': {e}")
+            pygame.quit()
+            sys.exit()
+        tile_width = bg_tile.get_width()
+        tile_height = bg_tile.get_height()
+
+        # Create a new background surface with the full screen width
+        self.background = pygame.Surface((SCREEN_WIDTH, tile_height))
+
+        # Tile the image across the entire new background
+        for x in range(0, SCREEN_WIDTH, tile_width):
+            self.background.blit(bg_tile, (x, 0))
+
+        self.bg_y1 = 0
+        self.bg_y2 = -self.background.get_height()
+
+        # Custom Events
+        self.ADD_ENEMY = pygame.USEREVENT + 1
+        # Use current difficulty settings for initial enemy spawn timer
+        min_delay, max_delay = self.current_difficulty_settings["enemy_spawn_delay"]
+        pygame.time.set_timer(self.ADD_ENEMY, random.randint(min_delay, max_delay))
+
+        self.ADD_CLOUD = pygame.USEREVENT + 2
+        pygame.time.set_timer(self.ADD_CLOUD, 1500)
+
+    def load_highscore(self):
+        try:
+            with open("highscore.txt", "r") as f:
+                self.highscore = int(f.read())
+        except (FileNotFoundError, ValueError):
+            self.highscore = 0
+
+    def save_highscore(self):
+        if self.score > self.highscore:
+            with open("highscore.txt", "w") as f:
+                f.write(str(self.score))
+
+    def run(self):
+        while self.running:
+            self.clock.tick(FPS)
+            self.events()
+            self.update()
+            self.draw()
+        self.save_highscore()
+        pygame.quit()
+        sys.exit()
+
+    def use_bomb(self):
+        if self.player.bombs > 0:
+            self.player.bombs -= 1
+            # Create the visual effect
+            bomb_effect = BombEffect(self.screen.get_rect().center)
+            self.all_sprites.add(bomb_effect)
+            # Destroy all enemies and add to score
+            for enemy in self.enemies:
+                enemy.kill()
+                self.score += 5 # Give some points for bomb kills
+
+    def events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LCTRL or event.key == pygame.K_RCTRL:
+                    self.player.shoot()
+                elif event.key == pygame.K_LALT or event.key == pygame.K_RALT:
+                    self.use_bomb()
+            elif event.type == self.ADD_ENEMY:
+                new_enemy = Enemy(self, self.current_difficulty_settings) # Pass game instance and difficulty settings to Enemy
+                self.enemies.add(new_enemy)
+                self.all_sprites.add(new_enemy)
+            elif event.type == self.ADD_CLOUD:
+                new_cloud = Cloud()
+                self.clouds.add(new_cloud)
+                self.all_sprites.add(new_cloud)
+
+    def update(self):
+        # Check and update difficulty stage
+        if self.current_difficulty_index + 1 < len(DIFFICULTY_STAGES):
+            next_stage_threshold = DIFFICULTY_STAGES[self.current_difficulty_index + 1]["score_threshold"]
+            if self.score >= next_stage_threshold:
+                self.current_difficulty_index += 1
+                self.current_difficulty_settings = DIFFICULTY_STAGES[self.current_difficulty_index]
+                # Reset enemy spawn timer with new difficulty settings
+                min_delay, max_delay = self.current_difficulty_settings["enemy_spawn_delay"]
+                pygame.time.set_timer(self.ADD_ENEMY, random.randint(min_delay, max_delay))
+
+        player_pos = self.player.rect.center # Get player's current position
+
+        # Update all sprites, passing player_pos only to Enemy instances
+        for sprite in self.all_sprites:
+            if isinstance(sprite, Enemy):
+                sprite.update(player_pos)
+            else:
+                sprite.update()
+
+        self.enemy_bullets.update() # Update enemy bullets
+
+        # Scroll background
+        self.bg_y1 += 1
+        self.bg_y2 += 1
+        if self.bg_y1 >= self.background.get_height():
+            self.bg_y1 = -self.background.get_height()
+        if self.bg_y2 >= self.background.get_height():
+            self.bg_y2 = -self.background.get_height()
+
+        # Check for collisions: bullets hitting enemies
+        hits = pygame.sprite.groupcollide(self.player.bullets, self.enemies, True, True)
+        for enemies_hit in hits.values():
+            for enemy in enemies_hit:
+                self.score += 10 # Increase score for each hit
+                explosion = Explosion(enemy.rect.center)
+                self.all_sprites.add(explosion)
+
+        # Check for collisions: enemies hitting player
+        hits = pygame.sprite.spritecollide(self.player, self.enemies, True)
+        if hits:
+            self.player.lives -= 1
+            explosion = Explosion(self.player.rect.center)
+            self.all_sprites.add(explosion)
+            self.player.reset()
+            if self.player.lives <= 0:
+                self.running = False
+
+        # Check for collisions: enemy bullets hitting player
+        enemy_bullet_hits = pygame.sprite.spritecollide(self.player, self.enemy_bullets, True)
+        if enemy_bullet_hits:
+            self.player.lives -= 1
+            explosion = Explosion(self.player.rect.center)
+            self.all_sprites.add(explosion)
+            self.player.reset()
+            if self.player.lives <= 0:
+                self.running = False
+
+    def draw_text(self, text, x, y):
+        text_surface = self.font.render(text, True, WHITE)
+        text_rect = text_surface.get_rect(topleft=(x, y))
+        self.screen.blit(text_surface, text_rect)
+
+    def draw_hud(self):
+        self.draw_text(f"Score: {self.score}", 10, 10)
+        self.draw_text(f"High Score: {self.highscore}", 10, 50)
+        self.draw_text(f"Lives: {self.player.lives}", SCREEN_WIDTH - 120, 10)
+        self.draw_text(f"Bombs: {self.player.bombs}", SCREEN_WIDTH - 120, 50)
+
+    def draw_shadow(self, surface, rect):
+        shadow_offset = (15, 25) # How far the shadow is from the plane
+        shadow_pos = (rect.x + shadow_offset[0], rect.y + shadow_offset[1])
+        
+        # Create a black, semi-transparent version of the sprite
+        shadow_image = surface.copy()
+        shadow_image.fill((0, 0, 0, 120), special_flags=pygame.BLEND_RGBA_MULT)
+        
+        self.screen.blit(shadow_image, shadow_pos)
+
+    def draw(self):
+        # 1. Draw scrolling background
+        self.screen.blit(self.background, (0, self.bg_y1))
+        self.screen.blit(self.background, (0, self.bg_y2))
+        
+        # 2. Draw shadows
+        self.draw_shadow(self.player.image, self.player.rect)
+        for enemy in self.enemies:
+            self.draw_shadow(enemy.image, enemy.rect)
+
+        # 3. Draw clouds
+        self.clouds.draw(self.screen)
+        
+        # 4. Draw actual sprites (planes, bullets, effects)
+        non_cloud_sprites = pygame.sprite.Group([s for s in self.all_sprites if not isinstance(s, Cloud)])
+        non_cloud_sprites.draw(self.screen)
+        self.enemy_bullets.draw(self.screen) # Draw enemy bullets
+
+        # 5. Draw HUD
+        self.draw_hud()
+        pygame.display.flip()
+
+if __name__ == "__main__":
+    game = Game()
+    game.run()
