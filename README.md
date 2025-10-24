@@ -12,6 +12,25 @@ Um clone simples do clássico jogo de arcade 1942, desenvolvido com Pygame.
 *   **Tela de Game Over:** Exibida ao perder todas as vidas, com pontuação, recorde e opções de reiniciar ou sair.
 *   **Sair do Jogo:** Pressione 'Q' a qualquer momento para sair.
 
+## Estrutura do Projeto
+
+O projeto segue uma estrutura modular para facilitar a manutenção e a escalabilidade:
+
+*   `main.py`: Ponto de entrada principal, responsável por iniciar o `GameManager`.
+*   `src/`: Contém todo o código-fonte do jogo.
+    *   `src/config.py`: Definições de constantes e configurações globais.
+    *   `src/game_manager.py`: Gerencia o fluxo geral do jogo e a transição entre as diferentes cenas (Splash, Jogo, Game Over).
+    *   `src/game_scene.py`: Contém a lógica principal do jogo (movimento, spawn de inimigos, etc.). Anteriormente `main.py`.
+    *   `src/game_objects/`: Contém as definições de todos os sprites do jogo (jogador, inimigos, balas, moedas, efeitos, ilhas).
+    *   `src/managers/`: Contém classes auxiliares para gerenciar aspectos específicos do jogo.
+        *   `src/managers/collision_manager.py`: Lógica de detecção e tratamento de colisões.
+        *   `src/managers/render_manager.py`: Lógica de desenho e renderização de todos os elementos na tela.
+        *   `src/managers/score_manager.py`: Gerencia a pontuação e o recorde.
+        *   `src/managers/sound_manager.py`: Gerencia os efeitos sonoros e músicas.
+    *   `src/screens/`: Contém as classes para as telas de interface (Splash, Game Over).
+*   `assets/`: Contém todos os recursos visuais e sonoros do jogo (imagens, GIFs, sons).
+*   `requirements.txt`: Lista das dependências Python do projeto.
+
 ## Como Rodar
 
 Para executar o jogo, siga os passos abaixo:
@@ -55,7 +74,7 @@ Para executar o jogo, siga os passos abaixo:
 
 *   Python 3.x
 *   Pygame
-*   Pillow (PIL Fork)
+*   Pillow
 
 As dependências exatas estão listadas em `requirements.txt`.
 
