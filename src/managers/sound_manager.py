@@ -36,6 +36,7 @@ class SoundManager:
             self.sounds['gameover'] = pygame.mixer.Sound("assets/sounds/Gameover.wav")
             self.sounds['tiro'] = pygame.mixer.Sound("assets/sounds/Tiro.wav")
             self.sounds['coin'] = pygame.mixer.Sound("assets/sounds/Coin.wav")
+            self.sounds['newphase'] = pygame.mixer.Sound("assets/sounds/Newphase.wav")
 
             self.sounds['motor'].set_volume(0.3)
         except pygame.error as e:

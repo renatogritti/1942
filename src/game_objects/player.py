@@ -47,6 +47,8 @@ class Player(pygame.sprite.Sprite):
         # Usa a duração própria do GIF para o atraso, ou um padrão
         self.anim_delay: int = self.frame_durations[0] if self.frame_durations else 50
 
+        self.weapon_type: str = "single" # Novo atributo para o tipo de tiro
+
     def load_animated_gif(self) -> None:
         """
         Carrega todos os frames de um GIF animado do avião do jogador e os converte para superfícies Pygame.
@@ -129,6 +131,9 @@ class Player(pygame.sprite.Sprite):
         Útil para iniciar um novo jogo ou após a morte do jogador.
         """
         self.rect.center = (SCREEN_WIDTH / 2, SCREEN_HEIGHT - 60)
+        self.weapon_type = "single" # Resetar tipo de arma
+        self.bombs = 1 # Resetar bombas
+        self.energy = self.max_energy # Resetar energia
 
     def shoot(self) -> None:
         """
@@ -136,6 +141,28 @@ class Player(pygame.sprite.Sprite):
 
         O projétil é adicionado aos grupos de sprites do jogo para ser atualizado e desenhado.
         """
-        bullet: Bullet = Bullet(self.rect.centerx, self.rect.top)
-        self.all_sprites.add(bullet)
-        self.bullets.add(bullet)
+        if self.weapon_type == "single":
+            bullet: Bullet = Bullet(self.rect.centerx, self.rect.top)
+            self.all_sprites.add(bullet)
+            self.bullets.add(bullet)
+        elif self.weapon_type == "double":
+            bullet1: Bullet = Bullet(self.rect.centerx - 15, self.rect.top)
+            bullet2: Bullet = Bullet(self.rect.centerx + 15, self.rect.top)
+            self.all_sprites.add(bullet1, bullet2)
+            self.bullets.add(bullet1, bullet2)
+
+    def change_weapon(self, weapon: str) -> None:
+        """
+        Muda o tipo de arma do jogador.
+        Args:
+            weapon (str): O novo tipo de arma ("single", "double").
+        """
+        self.weapon_type = weapon
+
+    def add_bomb(self, amount: int) -> None:
+        """
+        Adiciona uma quantidade de bombas ao jogador.
+        Args:
+            amount (int): A quantidade de bombas a ser adicionada.
+        """
+        self.bombs += amount

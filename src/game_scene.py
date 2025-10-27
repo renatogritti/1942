@@ -18,7 +18,9 @@ from src.game_objects.effects import BombEffect, Explosion, Cloud, GifExplosion
 from src.game_objects.bullet import Bullet, EnemyBullet
 from src.game_objects.coin import Coin
 from src.game_objects.island import Island
+from src.game_objects.powerups import BombPowerUp, AmmoPowerUp # Novo import
 from src.screens.game_over_screen import GameOverScreen
+from src.screens.phase_screen import PhaseScreen
 from src.managers.sound_manager import SoundManager
 from src.managers.score_manager import ScoreManager
 from src.managers.collision_manager import CollisionManager
@@ -57,6 +59,7 @@ class GameScene:
         self.islands: pygame.sprite.Group = pygame.sprite.Group()
         self.enemy_bullets: pygame.sprite.Group = pygame.sprite.Group()
         self.coins: pygame.sprite.Group = pygame.sprite.Group()
+        self.powerups: pygame.sprite.Group = pygame.sprite.Group() # Novo grupo
         self.player: Player = Player(self.all_sprites)
         self.all_sprites.add(self.player)
 
@@ -67,6 +70,7 @@ class GameScene:
             enemies_group=self.enemies,
             enemy_bullets_group=self.enemy_bullets,
             coins_group=self.coins,
+            powerups_group=self.powerups, # Passa o novo grupo
             sound_manager=self.sound_manager,
             score_callback=self._add_score,
             game_over_callback=self._handle_game_over,
@@ -95,6 +99,24 @@ class GameScene:
         self.ADD_CLOUD: int
         self.ADD_ISLAND: int
         self._setup_custom_events()
+        # Initial call to show phase screen for the first phase
+        self._show_phase_screen(initial_call=True)
+
+    def _show_phase_screen(self, initial_call: bool = False) -> None:
+        """
+        Exibe a tela de informações da fase.
+        """
+        if not initial_call:
+            self.sound_manager.stop_all_sounds()
+
+        phase_screen = PhaseScreen(
+            self.screen,
+            self.font,
+            self.sound_manager,
+            self.current_difficulty_settings,
+            self.current_difficulty_index + 1
+        )
+        phase_screen.show()
         self.start_game_sounds()
 
     def _setup_background(self) -> None:
@@ -225,6 +247,7 @@ class GameScene:
                 self.current_difficulty_settings = DIFFICULTY_STAGES[self.current_difficulty_index]
                 min_delay, max_delay = self.current_difficulty_settings["enemy_spawn_delay"]
                 pygame.time.set_timer(self.ADD_ENEMY, random.randint(min_delay, max_delay))
+                self._show_phase_screen()
 
     # Métodos getters para o RenderManager
     def _get_score(self) -> int:
@@ -257,13 +280,14 @@ class GameScene:
         e reinicia os sons do jogo.
         """
         self.score = 0
-        self.player.energy = self.player.max_energy
+        self.player.reset()
         self.all_sprites.empty()
         self.enemies.empty()
         self.clouds.empty()
         self.islands.empty()
         self.enemy_bullets.empty()
         self.coins.empty()
+        self.powerups.empty() # Limpa os powerups
         self.all_sprites.add(self.player)
         self.start_game_sounds()
 
