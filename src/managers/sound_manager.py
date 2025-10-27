@@ -65,6 +65,29 @@ class SoundManager:
 
     def stop_all_sounds(self) -> None:
         """
-        Para a reprodução de todos os sons e músicas atualmente tocando.
+        Para a reprodução de todos os sons, mas não a música de fundo.
         """
-        pygame.mixer.stop()
+        for sound in self.sounds.values():
+            sound.stop()
+
+    def play_background_music(self, filename: str, loops: int = -1, volume: float = 1.0) -> None:
+        """
+        Carrega e reproduz uma música de fundo em loop.
+
+        Args:
+            filename (str): O caminho para o arquivo de música.
+            loops (int): Número de vezes para repetir a música. -1 para loop infinito.
+            volume (float): O volume da música (0.0 a 1.0).
+        """
+        try:
+            pygame.mixer.music.load(filename)
+            pygame.mixer.music.set_volume(volume)
+            pygame.mixer.music.play(loops=loops)
+        except pygame.error as e:
+            print(f"Erro ao carregar ou tocar a música de fundo: {e}")
+
+    def stop_background_music(self) -> None:
+        """
+        Para a reprodução da música de fundo.
+        """
+        pygame.mixer.music.stop()

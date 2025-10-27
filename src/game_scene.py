@@ -117,7 +117,7 @@ class GameScene:
             self.current_difficulty_index + 1
         )
         phase_screen.show()
-        self.start_game_sounds()
+        self.start_game_sounds(is_initial_call=initial_call)
 
     def _setup_background(self) -> None:
         """
@@ -146,10 +146,12 @@ class GameScene:
         self.ADD_ISLAND = pygame.USEREVENT + 3
         pygame.time.set_timer(self.ADD_ISLAND, random.randint(5000, 10000))
 
-    def start_game_sounds(self) -> None:
+    def start_game_sounds(self, is_initial_call: bool = False) -> None:
         """
         Inicia os sons de fundo do jogo, como a música inicial e o som do motor do avião.
         """
+        if is_initial_call:
+            self.sound_manager.play_background_music("assets/sounds/Music.mid", loops=-1, volume=0.2)
         self.sound_manager.play_sound('initial')
         self.sound_manager.play_sound('motor', loops=-1)
 
@@ -222,6 +224,8 @@ class GameScene:
         """
         Gerencia a lógica de fim de jogo, salvando o recorde e exibindo a tela de Game Over.
         """
+        self.sound_manager.stop_all_sounds()
+        self.sound_manager.stop_background_music()
         self.score_manager.save_highscore(self.score)
         self.change_scene_callback("game_over") # Sinaliza para o GameManager mudar para a tela de Game Over
         self.running = False # Termina o loop interno desta cena

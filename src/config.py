@@ -30,7 +30,7 @@ DIFFICULTY_STAGES: List[Dict[str, Any]] = [
         "enemy_speed_x": (1, 2),
         "enemy_shoot_delay": (1000, 1500),
         "enemy_bullet_speed": 5,
-        "enemy_types_available": ["straight", "weaving"],
+        "enemy_types_available": ["straight"],
     },
     # Estágio 1: Fácil
     {
