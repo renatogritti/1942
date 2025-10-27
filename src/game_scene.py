@@ -18,7 +18,7 @@ from src.game_objects.effects import BombEffect, Explosion, Cloud, GifExplosion
 from src.game_objects.bullet import Bullet, EnemyBullet
 from src.game_objects.coin import Coin
 from src.game_objects.island import Island
-from src.game_objects.powerups import BombPowerUp, AmmoPowerUp # Novo import
+from src.game_objects.powerups import BombPowerUp, AmmoPowerUp
 from src.screens.game_over_screen import GameOverScreen
 from src.screens.phase_screen import PhaseScreen
 from src.managers.sound_manager import SoundManager
@@ -46,7 +46,7 @@ class GameScene:
         self.change_scene_callback = change_scene_callback
 
         self.clock: pygame.time.Clock = pygame.time.Clock()
-        self.running: bool = True # Esta variável agora controla o loop interno da cena, não o loop principal do jogo
+        self.running: bool = True
         self.score: int = 0
 
         self.current_difficulty_index: int = INITIAL_DIFFICULTY_STAGE_INDEX
@@ -59,9 +59,9 @@ class GameScene:
         self.islands: pygame.sprite.Group = pygame.sprite.Group()
         self.enemy_bullets: pygame.sprite.Group = pygame.sprite.Group()
         self.coins: pygame.sprite.Group = pygame.sprite.Group()
-        self.powerups: pygame.sprite.Group = pygame.sprite.Group() # Novo grupo
+        self.powerups: pygame.sprite.Group = pygame.sprite.Group()
         self.player: Player = Player(self.all_sprites)
-        self.all_sprites.add(self.player)
+        # Não adiciona o player ao all_sprites aqui, será feito na animação de decolagem
 
         # Inicializa o CollisionManager
         self.collision_manager = CollisionManager(
@@ -70,16 +70,21 @@ class GameScene:
             enemies_group=self.enemies,
             enemy_bullets_group=self.enemy_bullets,
             coins_group=self.coins,
-            powerups_group=self.powerups, # Passa o novo grupo
+            powerups_group=self.powerups,
             sound_manager=self.sound_manager,
             score_callback=self._add_score,
             game_over_callback=self._handle_game_over,
             player_instance=self.player,
-            get_current_phase_index=self._get_current_phase_index # Adiciona o getter da fase
+            get_current_phase_index=self._get_current_phase_index
         )
 
         self.background: pygame.Surface
         self._setup_background()
+
+        # Carrega a imagem do porta-aviões
+        self.carrier_image: pygame.Surface = self._load_carrier_image("assets/images/Portaavioes.png", (255, 0, 255))
+        # Posição inicial temporária, será ajustada na animação
+        self.carrier_rect: pygame.Rect = self.carrier_image.get_rect(midbottom=(SCREEN_WIDTH / 2, SCREEN_HEIGHT + 50))
 
         # Inicializa o RenderManager
         self.render_manager = RenderManager(
@@ -103,9 +108,30 @@ class GameScene:
         # Initial call to show phase screen for the first phase
         self._show_phase_screen(initial_call=True)
 
+    def _load_carrier_image(self, path: str, colorkey: Tuple[int, int, int]) -> pygame.Surface:
+        """
+        Carrega a imagem do porta-aviões, define a cor de transparência e redimensiona.
+        """
+        try:
+            image = pygame.image.load(path) # Carrega a imagem sem conversão inicial
+            if colorkey:
+                image.set_colorkey(colorkey) # Define a cor-chave para transparência
+            image = image.convert_alpha() # Converte para o formato com canal alfa
+
+            # Redimensionar a imagem para uma largura menor, mantendo a proporção
+            original_width, original_height = image.get_size()
+            scale_factor = (SCREEN_WIDTH * 0.8) / original_width # 80% da largura da tela
+            new_width = int(original_width * scale_factor)
+            new_height = int(original_height * scale_factor)
+            return pygame.transform.scale(image, (new_width, new_height))
+        except pygame.error as e:
+            print(f"Erro ao carregar imagem {path}: {e}")
+            pygame.quit()
+            sys.exit()
+
     def _show_phase_screen(self, initial_call: bool = False) -> None:
         """
-        Exibe a tela de informações da fase.
+        Exibe a tela de informações da fase e, se for a chamada inicial, a animação de decolagem.
         """
         if not initial_call:
             self.sound_manager.stop_all_sounds()
@@ -119,6 +145,72 @@ class GameScene:
         )
         phase_screen.show()
         self.start_game_sounds(is_initial_call=initial_call)
+
+        if initial_call:
+            self._play_takeoff_animation() # Chama a animação de decolagem após a splash screen
+
+    def _play_takeoff_animation(self) -> None:
+        """
+        Reproduz a animação de decolagem do porta-aviões.
+        """
+        # Posição inicial do porta-aviões (visível na parte inferior da tela)
+        # Ajustado para que o topo do porta-aviões esteja na parte inferior da tela
+        self.carrier_rect.midbottom = (SCREEN_WIDTH / 2, SCREEN_HEIGHT + 50) # Começa um pouco abaixo da tela
+
+        # Posição inicial do player no porta-aviões (ajustado para ficar 'em cima' do porta-aviões)
+        self.player.rect.centerx = self.carrier_rect.centerx
+        # Ajuste este valor para posicionar o avião corretamente no deck do porta-aviões
+        # Pode ser necessário um ajuste fino dependendo da imagem do porta-aviões e do avião
+        self.player.rect.bottom = self.carrier_rect.top + (self.carrier_rect.height * 0.15) # Exemplo: 15% da altura do porta-aviões a partir do topo
+        self.all_sprites.add(self.player) # Adiciona o player ao grupo de sprites para ser desenhado
+
+        takeoff_duration = 3000 # Duração da animação em milissegundos
+        start_time = pygame.time.get_ticks()
+
+        # Define a posição final do player após a decolagem
+        player_final_y = SCREEN_HEIGHT - 60
+
+        # Define a posição final do porta-aviões (totalmente fora da tela, para baixo)
+        carrier_final_y = SCREEN_HEIGHT + self.carrier_image.get_height() + 50 
+
+        # Armazena as posições iniciais para interpolação
+        player_start_y = self.player.rect.centery
+        carrier_start_y = self.carrier_rect.midbottom[1]
+
+        while pygame.time.get_ticks() - start_time < takeoff_duration:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.change_scene_callback("quit")
+                    return
+
+            elapsed_time = pygame.time.get_ticks() - start_time
+            progress = min(1, elapsed_time / takeoff_duration)
+
+            # Movimento do player (subindo)
+            self.player.rect.centery = int(player_start_y - (player_start_y - player_final_y) * progress)
+
+            # Movimento do porta-aviões (descendo)
+            self.carrier_rect.midbottom = (SCREEN_WIDTH / 2, int(carrier_start_y + (carrier_final_y - carrier_start_y) * progress))
+
+            # Rolagem do fundo durante a decolagem
+            self._scroll_background()
+
+            # Desenha o fundo
+            self.screen.blit(self.background, (0, self.render_manager.bg_y1))
+            self.screen.blit(self.background, (0, self.render_manager.bg_y2))
+
+            # Desenha o porta-aviões
+            self.screen.blit(self.carrier_image, self.carrier_rect)
+
+            # Desenha o player (e seus mini-aviões, se houver)
+            self.all_sprites.draw(self.screen) 
+
+            pygame.display.flip()
+            self.clock.tick(FPS)
+        
+        # Garante que o player esteja na posição final correta após a animação
+        self.player.rect.center = (SCREEN_WIDTH / 2, SCREEN_HEIGHT - 60)
+
 
     def _setup_background(self) -> None:
         """
@@ -165,8 +257,8 @@ class GameScene:
         """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                self.running = False # Sinaliza para o GameManager que esta cena deve terminar
-                self.change_scene_callback("quit") # Sinaliza para o GameManager sair
+                self.running = False
+                self.change_scene_callback("quit")
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LCTRL or event.key == pygame.K_RCTRL:
                     self.player.shoot()
@@ -174,8 +266,8 @@ class GameScene:
                 elif event.key == pygame.K_LALT or event.key == pygame.K_RALT:
                     self.use_bomb()
                 elif event.key == pygame.K_q:
-                    self.running = False # Sinaliza para o GameManager que esta cena deve terminar
-                    self.change_scene_callback("quit") # Sinaliza para o GameManager sair
+                    self.running = False
+                    self.change_scene_callback("quit")
             elif event.type == self.ADD_ENEMY:
                 new_enemy = Enemy(self, self.current_difficulty_settings)
                 self.enemies.add(new_enemy)
@@ -228,8 +320,8 @@ class GameScene:
         self.sound_manager.stop_all_sounds()
         self.sound_manager.stop_background_music()
         self.score_manager.save_highscore(self.score)
-        self.change_scene_callback("game_over") # Sinaliza para o GameManager mudar para a tela de Game Over
-        self.running = False # Termina o loop interno desta cena
+        self.change_scene_callback("game_over")
+        self.running = False
 
     def _check_collisions(self) -> None:
         """
@@ -298,8 +390,8 @@ class GameScene:
         self.islands.empty()
         self.enemy_bullets.empty()
         self.coins.empty()
-        self.powerups.empty() # Limpa os powerups
-        self.all_sprites.add(self.player)
+        self.powerups.empty()
+        self.all_sprites.add(self.player) # Adiciona o player de volta após o reset
         self.start_game_sounds()
 
     def use_bomb(self) -> None:
