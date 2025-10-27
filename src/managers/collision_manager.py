@@ -19,7 +19,8 @@ class CollisionManager:
                  sound_manager: Any, # Pode ser mais específico se SoundManager for um tipo
                  score_callback: Callable[[int], None], # Callback para adicionar pontuação
                  game_over_callback: Callable[[], None], # Callback para game over
-                 player_instance: Player): # Passa a instância do player para atualizar energia/bombas
+                 player_instance: Player,
+                 get_current_phase_index: Callable[[], int]): # Adiciona o getter da fase
         
         self.all_sprites = all_sprites_group
         self.player_bullets = player_bullets_group
@@ -31,6 +32,7 @@ class CollisionManager:
         self.score_callback = score_callback
         self.game_over_callback = game_over_callback
         self.player = player_instance
+        self.get_current_phase_index = get_current_phase_index # Armazena o getter da fase
 
     def _bullet_hit_enemy_bullet(self, player_bullet: Bullet, enemy_bullet: EnemyBullet) -> bool:
         """
@@ -47,7 +49,7 @@ class CollisionManager:
         inflated_rect = enemy_bullet.rect.inflate(20, 20)
         return inflated_rect.colliderect(player_bullet.rect)
 
-    def check_all_collisions(self) -> None:
+    def check_all_collisions(self, current_phase_index: int) -> None:
         """
         Verifica e processa todas as colisões entre os diferentes elementos do jogo.
         Inclui colisões entre tiros do jogador e inimigos, tiros do jogador e tiros inimigos,
@@ -113,4 +115,10 @@ class CollisionManager:
             if isinstance(powerup, BombPowerUp):
                 self.player.add_bomb(1)
             elif isinstance(powerup, AmmoPowerUp):
-                self.player.change_weapon("double")
+                # Lógica de upgrade de arma baseada na fase
+                current_phase = self.get_current_phase_index() + 1 # Fases são 1-indexed para o usuário
+                if current_phase >= 2 and self.player.weapon_type == "single":
+                    self.player.change_weapon("double")
+                elif current_phase >= 3 and self.player.weapon_type == "double":
+                    self.player.change_weapon("triple")
+                # Se já for triple ou fase < 2, não faz nada com AmmoPowerUp

@@ -74,7 +74,8 @@ class GameScene:
             sound_manager=self.sound_manager,
             score_callback=self._add_score,
             game_over_callback=self._handle_game_over,
-            player_instance=self.player
+            player_instance=self.player,
+            get_current_phase_index=self._get_current_phase_index # Adiciona o getter da fase
         )
 
         self.background: pygame.Surface
@@ -235,7 +236,7 @@ class GameScene:
         Verifica e processa todas as colisões entre os diferentes elementos do jogo.
         Agora delegada ao CollisionManager.
         """
-        self.collision_manager.check_all_collisions()
+        self.collision_manager.check_all_collisions(self.current_difficulty_index)
 
     def _update_difficulty(self) -> None:
         """
@@ -268,6 +269,12 @@ class GameScene:
 
     def _get_player_bombs(self) -> int:
         return self.player.bombs
+
+    def _get_current_phase_index(self) -> int:
+        """
+        Retorna o índice da fase atual.
+        """
+        return self.current_difficulty_index
 
     def draw(self) -> None:
         """

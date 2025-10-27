@@ -1,7 +1,7 @@
 import pygame
 from typing import Any, Tuple, Callable
 from src.config import SCREEN_WIDTH, SCREEN_HEIGHT, WHITE
-from src.game_objects.player import Player
+from src.game_objects.player import Player, MiniPlane # Importar MiniPlane
 from src.game_objects.enemy import Enemy
 from src.game_objects.effects import Cloud
 from src.game_objects.island import Island
@@ -104,7 +104,7 @@ class RenderManager:
 
         # Desenha as sombras dos elementos principais
         for sprite in self.all_sprites:
-            if isinstance(sprite, (Player, Enemy, Cloud)):
+            if isinstance(sprite, (Player, Enemy, Cloud, MiniPlane)): # Adicionado MiniPlane aqui
                 self._draw_shadow(sprite.image, sprite.rect)
 
         # Desenha os sprites principais (exceto ilhas, que já foram desenhadas)
