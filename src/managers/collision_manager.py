@@ -59,7 +59,15 @@ class CollisionManager:
         hits: Dict[pygame.sprite.Sprite, Any] = pygame.sprite.groupcollide(self.player_bullets, self.enemies, True, True)
         for enemies_hit in hits.values():
             for enemy in enemies_hit:
-                self.score_callback(10) # Adiciona 10 pontos
+                if enemy.type == 'straight':
+                    self.score_callback(10)
+                elif enemy.type == 'weaving':
+                    self.score_callback(20)
+                elif enemy.type == 'diving':
+                    self.score_callback(30)
+                else:
+                    self.score_callback(10)
+
                 self.sound_manager.play_sound('explosion')
                 # Adiciona ambos os efeitos de explosão
                 particle_explosion = Explosion(enemy.rect.center)
