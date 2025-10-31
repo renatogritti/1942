@@ -9,6 +9,7 @@ Autoria: Renato Gritti
 import pygame
 import random
 import sys
+import math
 from src.config import *
 from PIL import Image, ImageSequence
 from src.game_objects.bullet import EnemyBullet # Import EnemyBullet
@@ -50,17 +51,41 @@ class Enemy(pygame.sprite.Sprite):
         self.durations: List[int] = Enemy.frame_durations[self.type]
 
         self.current_frame: int = random.randint(0, len(self.frames) - 1)
-        self.image: pygame.Surface = self.frames[self.current_frame]
-        self.rect: pygame.Rect = self.image.get_rect(
-            center=(random.randint(40, SCREEN_WIDTH - 40), random.randint(-100, -40))
-        )
+        # A imagem base (self.frames) aponta para baixo. A rotação será aplicada no update.
+        self.base_image: pygame.Surface = self.frames[self.current_frame]
+        self.image: pygame.Surface = self.base_image
         
-        self.last_anim_time: int = 0
-        self.anim_delay: int = self.durations[self.current_frame]
-
         self.speed_y: int = random.randint(self.difficulty_settings["enemy_speed_y"][0], self.difficulty_settings["enemy_speed_y"][1])
         self.speed_x: int = random.randint(self.difficulty_settings["enemy_speed_x"][0], self.difficulty_settings["enemy_speed_x"][1]) if self.type in ['weaving', 'diving'] else 0
         self.direction_x: int = random.choice([-1, 1])
+
+        if self.type == 'diving':
+            self.movement_state = 'entering'
+            self.entry_side = random.choice(['left', 'right'])
+            entry_y = random.randint(150, SCREEN_HEIGHT // 2)
+            entry_x = -50 if self.entry_side == 'left' else SCREEN_WIDTH + 50
+            self.rect = self.image.get_rect(center=(entry_x, entry_y))
+
+            self.circle_center_x = random.randint(200, SCREEN_WIDTH - 200)
+            self.circle_center_y = entry_y + 50
+            self.circle_radius = random.randint(80, 120)
+            self.circle_direction = 1 if self.entry_side == 'left' else -1
+            self.circle_speed = random.uniform(0.02, 0.04) * self.circle_direction
+            
+            if self.entry_side == 'left':
+                self.circle_angle = math.pi
+            else:
+                self.circle_angle = 0
+            
+            self.total_angle_traveled = 0.0
+
+        else:
+            self.rect: pygame.Rect = self.image.get_rect(
+                center=(random.randint(40, SCREEN_WIDTH - 40), random.randint(-100, -40))
+            )
+
+        self.last_anim_time: int = 0
+        self.anim_delay: int = self.durations[self.current_frame]
 
         self.last_shot_time: int = pygame.time.get_ticks()
         self.shoot_delay: int = random.randint(self.difficulty_settings["enemy_shoot_delay"][0], self.difficulty_settings["enemy_shoot_delay"][1])
@@ -105,6 +130,7 @@ class Enemy(pygame.sprite.Sprite):
                 target_height: int = int(target_width * aspect_ratio)
                 scaled_image: pygame.Surface = pygame.transform.scale(pygame_image, (target_width, target_height))
                 
+                # Inverte a imagem para que a frente do avião aponte para baixo
                 flipped_image: pygame.Surface = pygame.transform.flip(scaled_image, False, True)
                 
                 cls.animation_frames[enemy_type].append(flipped_image)
@@ -125,11 +151,27 @@ class Enemy(pygame.sprite.Sprite):
             if self.rect.left < 0 or self.rect.right > SCREEN_WIDTH:
                 self.direction_x *= -1
         elif self.type == 'diving':
-            if self.rect.centerx < player_pos[0]:
-                self.rect.x += min(self.speed_x, player_pos[0] - self.rect.centerx)
-            elif self.rect.centerx > player_pos[0]:
-                self.rect.x -= min(self.speed_x, self.rect.centerx - player_pos[0])
-            self.rect.y += self.speed_y
+            if self.movement_state == 'entering':
+                target_x = self.circle_center_x - self.circle_radius * math.cos(self.circle_angle)
+                if (self.entry_side == 'left' and self.rect.centerx < target_x) or \
+                   (self.entry_side == 'right' and self.rect.centerx > target_x):
+                    self.rect.x += self.speed_x if self.entry_side == 'left' else -self.speed_x
+                else:
+                    self.movement_state = 'circling'
+
+            elif self.movement_state == 'circling':
+                self.circle_angle += self.circle_speed
+                self.total_angle_traveled += abs(self.circle_speed)
+
+                if self.total_angle_traveled >= 2 * math.pi:
+                    self.movement_state = 'exiting'
+                
+                new_x = self.circle_center_x - self.circle_radius * math.cos(self.circle_angle)
+                new_y = self.circle_center_y - self.circle_radius * math.sin(self.circle_angle)
+                self.rect.center = (new_x, new_y)
+
+            elif self.movement_state == 'exiting':
+                self.rect.y += self.speed_y
 
     def _shoot(self, player_pos: Tuple[int, int]) -> None:
         """
@@ -154,21 +196,56 @@ class Enemy(pygame.sprite.Sprite):
         Args:
             player_pos (Tuple[int, int]): A posição (x, y) atual do jogador, usada para o movimento e disparo.
         """
+        old_center = self.rect.center
+
+        # --- Movimento ---
+        self._move(player_pos)
+        
+        new_center = self.rect.center
+
         # --- Animação ---
-        now: int = pygame.time.get_ticks()
+        now = pygame.time.get_ticks()
         if now - self.last_anim_time > self.anim_delay:
             self.last_anim_time = now
             self.current_frame = (self.current_frame + 1) % len(self.frames)
             self.anim_delay = self.durations[self.current_frame]
-            
-            center: Tuple[int, int] = self.rect.center
-            self.image = self.frames[self.current_frame]
-            self.rect = self.image.get_rect(center=center)
+        
+        self.base_image = self.frames[self.current_frame]
 
-        # --- Movimento ---
-        self._move(player_pos)
+        # --- Rotação ---
+        dx = new_center[0] - old_center[0]
+        dy = new_center[1] - old_center[1]
+        
+        if self.type in ['weaving', 'diving'] and (dx != 0 or dy != 0):
+            # A imagem base aponta para baixo (eixo Y positivo).
+            # math.atan2(dx, dy) calcula o ângulo do vetor de movimento (dx, dy) em relação ao eixo Y.
+            # Uma rotação positiva em Pygame é anti-horária.
+            # Se dx > 0 (movendo para a direita), o ângulo é positivo, resultando em uma rotação anti-horária (correto).
+            # Se dx < 0 (movendo para a esquerda), o ângulo é negativo, resultando em uma rotação horária (correto).
+            # Isso corrige a inclinação invertida e o voo de ré.
+            angle = math.degrees(math.atan2(dx, dy))
+            self.image = pygame.transform.rotate(self.base_image, angle)
+        else:
+            self.image = self.base_image
+        
+        self.rect = self.image.get_rect(center=new_center)
+
+        # --- Condição de Saída ---
         if self.rect.top > SCREEN_HEIGHT:
             self.kill()
 
         # --- Disparo ---
-        self._shoot(player_pos)
+        can_shoot = True
+        if self.type == 'diving':
+            # Só permite atirar quando o avião está virado predominantemente para baixo.
+            # O vetor de movimento dy deve ser positivo (movendo para baixo).
+            # O ângulo de voo (em relação ao eixo X) deve estar entre 45 e 135 graus.
+            if dy > 0.1:  # Usamos 0.1 para evitar problemas com dy sendo exatamente 0
+                flight_angle_deg = math.degrees(math.atan2(dy, dx))
+                if not (45 < flight_angle_deg < 135):
+                    can_shoot = False
+            else:
+                can_shoot = False
+        
+        if can_shoot:
+            self._shoot(player_pos)
